@@ -463,6 +463,61 @@ class DiscreteFactor(BaseFactor, StateNameMixin):
         if not inplace:
             return phi
 
+    def fast_reduce(self, values, original):
+        """
+        Reduces the factor to the context of given variable values.
+
+        Parameters
+        ----------
+        values: list, array-like
+            A list of tuples of the form (variable_name, variable_state).
+
+        inplace: boolean
+            If inplace=True it will modify the factor itself, else would return
+            a new factor.
+
+        Returns
+        -------
+        DiscreteFactor or None: if inplace=True (default) returns None
+                        if inplace=False returns a new `DiscreteFactor` instance.
+
+        Examples
+        --------
+        >>> from pgmpy.factors.discrete import DiscreteFactor
+        >>> phi = DiscreteFactor(['x1', 'x2', 'x3'], [2, 3, 2], range(12))
+        >>> phi.reduce([('x1', 0), ('x2', 0)])
+        >>> phi.variables
+        ['x3']
+        >>> phi.cardinality
+        array([2])
+        >>> phi.values
+        array([0., 1.])
+        """
+        phi = self
+        values = [
+            (var, original.get_state_no(var, state_name)) for var, state_name in values
+        ]
+        # print("zv", values)
+
+        var_index_to_del = []
+        slice_ = [slice(None)] * len(original.variables)
+        for var, state in values:
+            var_index = original.variables.index(var)
+            slice_[var_index] = state
+            var_index_to_del.append(var_index)
+
+        var_index_to_keep = sorted(
+            set(range(len(original.variables))) - set(var_index_to_del)
+        )
+        # set difference is not gaurenteed to maintain ordering
+        variables = [original.variables[index] for index in var_index_to_keep]
+        cardinality = original.cardinality[var_index_to_keep]
+        # print("ts", tuple(slice_))
+        # print("os", original.values)
+        # print(original.values[tuple(slice_)])
+        values = original.values[tuple(slice_)]
+        return variables, cardinality, values
+
     def sum(self, phi1, inplace=True):
         """
         DiscreteFactor sum with `phi1`.

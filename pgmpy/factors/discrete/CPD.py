@@ -363,9 +363,15 @@ class TabularCPD(DiscreteFactor):
                 "Reduce not allowed on the variable on which CPD is defined"
             )
 
-        tabular_cpd = self if inplace else self.copy()
-
-        super(TabularCPD, tabular_cpd).reduce(values)
+        test = self
+        # tabular_cpd = self if inplace else self.copy()
+        # super(TabularCPD, tabular_cpd).reduce(values)
+        variables, cardinality, valuess = super(TabularCPD, self).fast_reduce(values, test)
+        tabular_cpd = TabularCPD('diff', 2, [[0.6], [0.4]])
+        tabular_cpd.variables = variables
+        tabular_cpd.variable = self.variable
+        tabular_cpd.cardinality = cardinality
+        tabular_cpd.values = valuess
         tabular_cpd.normalize()
 
         if not inplace:
